@@ -1,48 +1,41 @@
-name: Selenium CI
+name: Selenium Test CI
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install selenium webdriver-manager
+    - name: Install Dependencies
+      run: |
+        pip install selenium
+        sudo apt update
+        sudo apt install -y wget unzip
 
-      - name: Install Google Chrome
-        run: |
-          sudo apt remove google-chrome-stable -y || true
-          wget -q -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i chrome.deb || sudo apt-get -f install -y
-          google-chrome --version  # Ensure Chrome is installed
+    - name: Install Google Chrome
+      run: |
+        sudo apt remove google-chrome-stable -y
+        wget -q -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i chrome.deb || sudo apt-get -f install -y
+        google-chrome --version
 
-      - name: Install ChromeDriver
-        run: |
-          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1) || echo "Failed to get Chrome version"
-          echo "Detected Chrome Version: $CHROME_VERSION"
-          LATEST_DRIVER=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION") || echo "Failed to get latest ChromeDriver"
-          echo "Using ChromeDriver Version: $LATEST_DRIVER"
-          wget -q "https://chromedriver.storage.googleapis.com/${LATEST_DRIVER}/chromedriver_linux64.zip" || echo "Failed to download ChromeDriver"
-          unzip chromedriver_linux64.zip || echo "Failed to unzip ChromeDriver"
-          sudo mv chromedriver /usr/local/bin/
-          chromedriver --version || echo "ChromeDriver installation failed"
+    - name: Install Correct ChromeDriver
+      run: |
+        wget -q "https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.165/linux64/chromedriver-linux64.zip"
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/local/bin/
+        chromedriver --version
 
-      - name: Run Selenium Tests
-        run: python test_login.py
+    - name: Run Selenium Test
+      run: python test_login.py
+      env:
+        DISPLAY: ":99"
